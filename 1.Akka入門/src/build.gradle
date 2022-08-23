@@ -10,7 +10,8 @@ repositories {
 }
 
 def versions = [
-        ScalaBinary: "2.13"
+        ScalaBinary: "2.13",
+        akkaVersion: "2.6.18"
 ]
 
 compileJava.options.encoding = 'UTF-8'
@@ -20,8 +21,11 @@ dependencies {
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
 
     // Akka
-    implementation platform("com.typesafe.akka:akka-bom_${versions.ScalaBinary}:2.6.19")
+    implementation platform("com.typesafe.akka:akka-bom_${versions.ScalaBinary}:${versions.akkaVersion}")
     implementation "com.typesafe.akka:akka-actor-typed_${versions.ScalaBinary}"
+
+    implementation "com.typesafe.akka:akka-slf4j_${versions.ScalaBinary}"
+    implementation "ch.qos.logback:logback-classic:1.2.11"
 }
 
 test {

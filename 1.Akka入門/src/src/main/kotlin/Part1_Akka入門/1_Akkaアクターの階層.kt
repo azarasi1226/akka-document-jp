@@ -1,6 +1,5 @@
 package Part1_Akka入門
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.AbstractBehavior
@@ -8,7 +7,12 @@ import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 
-class Secound private constructor(context: ActorContext<String>): AbstractBehavior<String>(context) {
+/**
+ * 最後に呼ばれるアクター
+ */
+class Second private constructor(
+    context: ActorContext<String>
+): AbstractBehavior<String>(context) {
     override fun createReceive(): Receive<String> {
         return newReceiveBuilder()
             .onMessageEquals("apply2") { apply2() }
@@ -18,27 +22,33 @@ class Secound private constructor(context: ActorContext<String>): AbstractBehavi
     private fun apply2(): Behavior<String?> {
         val secondRef = context.spawn(Behaviors.empty<String>(), "second-actor")
 
-        println("Second: $secondRef")
+        context.log.debug("Second: $secondRef")
 
         return this
     }
 
     companion object {
         fun create(): Behavior<String> {
-            return Behaviors.setup { context: ActorContext<String> -> Secound(context) }
+            return Behaviors.setup { context: ActorContext<String> -> Second(context) }
         }
     }
 }
 
-class First private constructor(context: ActorContext<String>) : AbstractBehavior<String>(context) {
+
+/**
+ * 最初に呼ばれるアクター
+ */
+class First private constructor(
+    context: ActorContext<String>
+): AbstractBehavior<String>(context) {
     override fun createReceive(): Receive<String> {
         return newReceiveBuilder()
-            .onMessageEquals("apply1") { this.apply1() }
+            .onMessageEquals("apply1") { apply1() }
             .build()
     }
 
-    private fun apply1(): Behavior<String?> {
-        val firstRef = context.spawn(Secound.create(), "first-actor")
+    private fun apply1(): Behavior<String> {
+        val firstRef = context.spawn(Second.create(), "first-actor")
 
         println("First: $firstRef")
         firstRef.tell("apply2")
@@ -53,7 +63,10 @@ class First private constructor(context: ActorContext<String>) : AbstractBehavio
     }
 }
 
+/**
+ * エントリーポイント
+ */
 fun main() {
-    val testSystem: ActorRef<String> = ActorSystem.create(First.create(), "testSystem")
-    testSystem.tell("apply1")
+    val first = ActorSystem.create(First.create(), "first")
+    first.tell("apply1")
 }

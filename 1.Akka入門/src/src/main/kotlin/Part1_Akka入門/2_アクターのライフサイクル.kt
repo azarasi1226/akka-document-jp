@@ -1,6 +1,5 @@
 package Part1_Akka入門
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
@@ -9,7 +8,12 @@ import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 
-class StartStopActor2 private constructor(context: ActorContext<String>): AbstractBehavior<String>(context) {
+/**
+ * 最初に停止されるアクター
+ */
+class StartStopActor2 private constructor(
+    context: ActorContext<String>
+): AbstractBehavior<String>(context) {
     init {
         println("Second Start")
     }
@@ -17,12 +21,12 @@ class StartStopActor2 private constructor(context: ActorContext<String>): Abstra
     override fun createReceive(): Receive<String> {
         return newReceiveBuilder()
             // PostStopシグナルが送信されたらonPostStop()実行
-            .onSignal(PostStop::class.java) { _: PostStop? -> onPostStop() }
+            .onSignal(PostStop::class.java) { onPostStop() }
             .build()
     }
 
-    private fun onPostStop(): Behavior<String?> {
-        println("Secound Stop!!")
+    private fun onPostStop(): Behavior<String> {
+        println("Second Stop!")
 
         return this
     }
@@ -36,25 +40,31 @@ class StartStopActor2 private constructor(context: ActorContext<String>): Abstra
     }
 }
 
-class StartStopActor1 private constructor(context: ActorContext<String>): AbstractBehavior<String>(context) {
+/**
+ * ２番目に停止するアクター
+ */
+class StartStopActor1 private constructor(
+    context: ActorContext<String>
+): AbstractBehavior<String>(context) {
     init {
         println("First Start")
 
         //どこの参照にも入れないけどとりあえずアクター作成
+        //これだけで小アクターとして登録されるよ！
         context.spawn(StartStopActor2.create(), "second")
     }
 
     override fun createReceive(): Receive<String> {
         return newReceiveBuilder()
-            // stopメッセージが来たらアクター停止
+            // stopメッセージが来たらアクターをBehaveirs.stopped()を返して停止させる
             .onMessageEquals("stop") { Behaviors.stopped() }
-            .onSignal(PostStop::class.java) { _: PostStop? -> onPostStop() }
+            .onSignal(PostStop::class.java) { onPostStop() }
             .build()
     }
 
 
-    private fun onPostStop(): Behavior<String?> {
-        println("first Stop!!!")
+    private fun onPostStop(): Behavior<String> {
+        println("First Stop!")
 
         return this
     }
@@ -67,7 +77,10 @@ class StartStopActor1 private constructor(context: ActorContext<String>): Abstra
     }
 }
 
+/**
+ * エントリーポイント
+ */
 fun main(){
-    val testSystem: ActorRef<String> = ActorSystem.create(StartStopActor1.create(), "first")
-    testSystem.tell("stop")
+    val first = ActorSystem.create(StartStopActor1.create(), "first")
+    first.tell("stop")
 }
