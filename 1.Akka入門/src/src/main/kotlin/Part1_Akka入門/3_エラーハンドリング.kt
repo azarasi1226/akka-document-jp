@@ -64,10 +64,11 @@ class SupervisingActor private constructor(
     init {
         child = context.spawn(
             // 監視してActorを作成する。ちなみにこれは子が落ちたらその子を再起動させるという意味
-            Behaviors.supervise(SupervisedActor.create())
-                .onFailure(SupervisorStrategy.restart()),
+            SupervisedActor.create(),
             "supervised-actor"
         )
+
+        context.watch(child)
     }
 
     override fun createReceive(): Receive<String> {
@@ -103,5 +104,4 @@ class SupervisingActor private constructor(
 fun main(){
     val testSystem: ActorRef<String> = ActorSystem.create(SupervisingActor.create(), "first")
     testSystem.tell("failChild")
-    testSystem.tell("stop")
 }
